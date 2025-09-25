@@ -1,17 +1,17 @@
 name: Build Python 3.12 for Bullseye
 
 on:
-  workflow_dispatch:   # manual trigger
+  workflow_dispatch:   # allows manual trigger
   push:
     branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-22.04
-    container: debian:bullseye   # <-- build inside Bullseye
+    container: debian:bullseye   # run inside Debian Bullseye container
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Install build dependencies
@@ -19,9 +19,10 @@ jobs:
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y \
             build-essential \
+            wget \
             libssl-dev zlib1g-dev libncurses5-dev libffi-dev \
             libsqlite3-dev libreadline-dev libbz2-dev \
-            liblzma-dev tk-dev wget ca-certificates
+            liblzma-dev tk-dev ca-certificates
 
       - name: Download Python 3.12.7 source
         run: |
@@ -29,14 +30,19 @@ jobs:
           tar -xf Python-3.12.7.tgz
           mv Python-3.12.7 python-src
 
-      - name: Build Python
+      - name: Build and install Python 3.12
         run: |
           cd python-src
-          ./configure --prefix=/opt/python312
+          ./configure --prefix=/opt/python312 --enable-optimizations
           make -j2
           make install
 
-      - name: Package result
+      - name: Verify Python version
+        run: |
+          /opt/python312/bin/python3.12 --version
+          /opt/python312/bin/pip3.12 --version
+
+      - name: Package Python build
         run: |
           tar -czf python312-bullseye-x86_64.tar.gz -C /opt python312
 
