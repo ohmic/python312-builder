@@ -1,53 +1,53 @@
-name: Build Python 3.12 for Bullseye
+name: Build VLC 3.0.17.4 for Debian Bullseye
 
 on:
-  workflow_dispatch:   # allows manual trigger
-  push:
-    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    container: debian:bullseye   # run inside Debian Bullseye container
+    runs-on: ubuntu-latest
+    container:
+      image: debian:bullseye
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install build dependencies
+      - name: Install dependencies
         run: |
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y \
-            build-essential \
-            wget \
-            libssl-dev zlib1g-dev libncurses5-dev libffi-dev \
-            libsqlite3-dev libreadline-dev libbz2-dev \
-            liblzma-dev tk-dev ca-certificates
+          apt-get install -y \
+            build-essential pkg-config git curl wget \
+            automake autoconf libtool \
+            libxcb1-dev libxcb-shm0-dev libxcb-xv0-dev \
+            libxcb-keysyms1-dev libxcb-randr0-dev \
+            libxcb-xinerama0-dev libxcb-composite0-dev \
+            libxcb-xfixes0-dev libxcb-shape0-dev \
+            libxcb-image0-dev \
+            libx11-dev libxext-dev \
+            libgl1-mesa-dev libglu1-mesa-dev \
+            libasound2-dev libpulse-dev \
+            libdbus-1-dev libsystemd-dev \
+            libfreetype6-dev libfribidi-dev libharfbuzz-dev \
+            liba52-0.7.4-dev libdca-dev libdvbpsi-dev \
+            libdvdnav-dev libdvdread-dev \
+            libmad0-dev libmpeg2-4-dev \
+            libogg-dev libvorbis-dev libflac-dev libopus-dev \
+            libtheora-dev libx264-dev
 
-      - name: Download Python 3.12.7 source
+      - name: Download VLC 3.0.17.4 source
         run: |
-          wget https://www.python.org/ftp/python/3.12.7/Python-3.12.7.tgz
-          tar -xf Python-3.12.7.tgz
-          mv Python-3.12.7 python-src
+          wget https://download.videolan.org/pub/videolan/vlc/3.0.17.4/vlc-3.0.17.4.tar.xz
+          tar xf vlc-3.0.17.4.tar.xz
+          cd vlc-3.0.17.4
+          ./bootstrap
 
-      - name: Build and install Python 3.12
+      - name: Configure and Build VLC
         run: |
-          cd python-src
-          ./configure --prefix=/opt/python312 --enable-optimizations
-          make -j2
-          make install
+          cd vlc-3.0.17.4
+          ./configure --prefix=/usr
+          make -j$(nproc)
+          make install DESTDIR=./out
 
-      - name: Verify Python version
-        run: |
-          /opt/python312/bin/python3.12 --version
-          /opt/python312/bin/pip3.12 --version
-
-      - name: Package Python build
-        run: |
-          tar -czf python312-bullseye-x86_64.tar.gz -C /opt python312
-
-      - name: Upload artifact
+      - name: Archive Build
         uses: actions/upload-artifact@v4
         with:
-          name: python312-bullseye
-          path: python312-bullseye-x86_64.tar.gz
+          name: vlc-3.0.17.4-bullseye
+          path: vlc-3.0.17.4/out
