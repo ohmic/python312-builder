@@ -1,0 +1,31 @@
+name: Interactive Debian Bullseye VLC Build
+
+on:
+  workflow_dispatch:  # manual trigger
+
+jobs:
+  interactive-build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker container with Debian Bullseye
+        run: |
+          docker pull debian:bullseye
+          docker run -d --name bullseye-build -it debian:bullseye sleep infinity
+
+      - name: Install tmate
+        run: |
+          sudo apt update
+          sudo apt install -y tmate docker.io
+          
+      - name: Launch tmate session inside container
+        uses: mxschmitt/action-tmate@v3
+        with:
+          install: true
+        env:
+          DOCKER_CONTAINER: bullseye-build
+        run: |
+          echo "Attaching to Debian Bullseye container..."
+          docker exec -it $DOCKER_CONTAINER bash
